@@ -1,0 +1,52 @@
+name: 공지사항 모니터링
+
+on:
+  # 스케줄: 매일 오전 9시, 오후 1시, 오후 6시 (KST = UTC+9)
+  # UTC 기준으로 설정 (KST 09:00 = UTC 00:00, KST 13:00 = UTC 04:00, KST 18:00 = UTC 09:00)
+  schedule:
+    - cron: '0 0 * * *'    # KST 09:00
+    - cron: '0 4 * * *'    # KST 13:00
+    - cron: '0 9 * * *'    # KST 18:00
+
+  # 수동 실행도 가능
+  workflow_dispatch:
+
+# 동시 실행 방지
+concurrency:
+  group: notice-monitor
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # data/ 디렉토리에 결과 저장용
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: 스크래퍼 실행
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scraper.py
+
+      - name: 결과 커밋 & 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          # 변경사항이 있을 때만 커밋
+          git diff --staged --quiet || git commit -m "chore: update notice data [$(date +'%Y-%m-%d %H:%M')]"
+          git push
