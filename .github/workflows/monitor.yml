@@ -4,9 +4,9 @@ on:
   # 스케줄: 매일 오전 9시, 오후 1시, 오후 6시 (KST = UTC+9)
   # UTC 기준으로 설정 (KST 09:00 = UTC 00:00, KST 13:00 = UTC 04:00, KST 18:00 = UTC 09:00)
   schedule:
-    - cron: '0 0 * * *'    # KST 09:00
-    - cron: '0 4 * * *'    # KST 13:00
-    - cron: '0 9 * * *'    # KST 18:00
+    - cron: "0 0 * * *" # KST 09:00
+    - cron: "0 4 * * *" # KST 13:00
+    - cron: "0 9 * * *" # KST 18:00
 
   # 수동 실행도 가능
   workflow_dispatch:
@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write   # data/ 디렉토리에 결과 저장용
+  contents: read
 
 jobs:
   scrape:
@@ -31,7 +31,7 @@ jobs:
       - name: Python 설정
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: 패키지 설치
         run: pip install -r requirements.txt
@@ -41,23 +41,3 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python scraper.py
-
-      - name: 결과 커밋 & 푸시
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          # 변경사항이 없으면 스킵
-          if git diff --staged --quiet; then
-            echo "변경사항 없음 - 스킵"
-            exit 0
-          fi
-          git commit -m "chore: update notice data [$(date +'%Y-%m-%d %H:%M')]"
-          # 최대 3회 retry
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push && exit 0
-            echo "push 실패 (시도 $i/3), 재시도..."
-            sleep 5
-          done
-          echo "3회 모두 실패"
-          exit 1
