@@ -9,6 +9,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # ─── 설정 ───────────────────────────────────────────────
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -156,7 +157,7 @@ def send_telegram_message(message):
 
 def format_all_notices(notices):
     """수집한 전체 공지를 Telegram 메시지로 변환"""
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now = datetime.now().astimezone(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M")
     lines = [f"📋 <b>공지사항 목록</b> ({now})\n"]
 
     by_source = {}
